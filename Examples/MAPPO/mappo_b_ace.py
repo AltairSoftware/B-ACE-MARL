@@ -131,7 +131,7 @@ def make_reward_fn(cfg: dict):
             np.any(z_pos > area["z_max"])
         )
         if outside:
-            reward += area.get("out_penalty", -1.0)
+            reward += area.get("out_penalty", -0.0001)
 
         return reward
 

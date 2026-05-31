@@ -47,7 +47,7 @@ agents:
 algo:
   num_envs:        28
   num_steps:       1024        # number of steps until updating policy
-  total_timesteps: 3000000
+  total_timesteps: 50000000
   update_epochs:   4
   num_minibatches: 4
   gamma:           0.99
