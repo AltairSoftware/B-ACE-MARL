@@ -4,7 +4,7 @@
 env:
   env_path: "../../bin/B_ACE_v0.1.exe"
   renderize: 0          # 0: headless (training), 1: display (debug)
-  speed_up: 50000
+  speed_up: 100000
   max_cycles: 36000
   seed: 1
   action_type: "Low_Level_Continuous"
@@ -63,6 +63,6 @@ logging:
   restore: null              # set to a checkpoint path to resume, e.g. "Results/mappo_b_ace_xxx/checkpoint_100.pt"
 
 eval:
-  checkpoint: Results\mappo_b_ace_20260531_211819\checkpoint_20.pt     # path to checkpoint, e.g. "Results/mappo_b_ace_xxx/final.pt"
+  checkpoint: Results\mappo_b_ace_20260531_215950\final.pt     # path to checkpoint, e.g. "Results/mappo_b_ace_xxx/final.pt"
   n_episodes: 10       # number of episodes to run
   deterministic: true  # true: mean action (recommended), false: sample stochastically

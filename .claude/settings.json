@@ -13,7 +13,8 @@
       "PowerShell(Rename-Item -Path \"C:\\\\Users\\\\yoshi\\\\Workspace\\\\B-ACE-MARL\\\\Examples\\\\CleanRL\" -NewName \"MAPPO\")",
       "Bash(git mv *)",
       "Bash(python Examples/MAPPO/networks.py)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(python Examples/MAPPO/mappo_b_ace.py)"
     ]
   }
 }
