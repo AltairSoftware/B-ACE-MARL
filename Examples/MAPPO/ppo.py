@@ -187,8 +187,13 @@ def train(
     print()
 
     # ── Environment ───────────────────────────────────────────────────────
+    combat_area = cfg.get("combat_area")
     env_fns = [lambda idx=i: _make_single_env(b_ace_config, idx) for i in range(n_envs)]
-    venv = PettingZooVecEnv(env_fns)
+    venv = PettingZooVecEnv(env_fns, combat_area=combat_area)
+    if combat_area:
+        print(f"  combat_area: x=[{combat_area['x_min']}, {combat_area['x_max']}]"
+              f"  z=[{combat_area['z_min']}, {combat_area['z_max']}]"
+              f"  penalty={combat_area.get('out_penalty', -1.0)}")
 
     obs_dim        = venv.obs_dim
     action_dim     = venv.action_dim

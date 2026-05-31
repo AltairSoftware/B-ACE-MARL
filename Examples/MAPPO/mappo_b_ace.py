@@ -96,20 +96,42 @@ def build_b_ace_config(cfg: dict) -> dict:
 #
 # Args:
 #   obs    Next observation, shape (n_agents, obs_dim).
+#          obs[:, 0] = own_x_pos  (normalized lateral position)
+#          obs[:, 1] = own_z_pos  (normalized longitudinal position)
 #   reward Raw reward from the Godot simulation (sum over all blue agents).
 #   done   True if the episode ended on this step.
 #
 # Returns:
 #   Modified reward (float).
-#
-# Example — small penalty per step to encourage shorter episodes:
-#   def reward_fn(obs, reward, done):
-#       return reward - 0.001
 # ---------------------------------------------------------------------------
 
-def reward_fn(obs: np.ndarray, reward: float, done: bool) -> float:
-    _ = obs, done   # unused in default implementation; use them when adding shaping
-    return reward
+def make_reward_fn(cfg: dict):
+    """
+    Returns a reward_fn that applies combat area boundary penalty.
+    When combat_area is not set in config.yaml, behaves as identity (no shaping).
+    """
+    area = cfg.get("combat_area")
+
+    def reward_fn(obs: np.ndarray, reward: float, done: bool) -> float:
+        if area is None:
+            return reward
+
+        # obs[:, 0] = own_x_pos,  obs[:, 1] = own_z_pos
+        x_pos = obs[:, 0]
+        z_pos = obs[:, 1]
+
+        outside = (
+            np.any(x_pos < area["x_min"]) or
+            np.any(x_pos > area["x_max"]) or
+            np.any(z_pos < area["z_min"]) or
+            np.any(z_pos > area["z_max"])
+        )
+        if outside:
+            reward += area.get("out_penalty", -1.0)
+
+        return reward
+
+    return reward_fn
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +147,6 @@ if __name__ == "__main__":
     train(
         cfg,
         build_b_ace_config(cfg),
-        reward_fn=reward_fn,
+        reward_fn=make_reward_fn(cfg),
         restore_path=restore,
     )

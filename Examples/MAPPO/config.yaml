@@ -10,12 +10,12 @@ env:
   action_type: "Low_Level_Continuous"
 
 rewards:
-  mission_factor:              0.001
+  mission_factor:              0.0001
   missile_fire_factor:        -0.1
-  missile_no_fire_factor:     -0.001
+  missile_no_fire_factor:     -0.0
   missile_miss_factor:        -0.5
   detect_loss_factor:         -0.1
-  keep_track_factor:           0.001
+  keep_track_factor:           0.0001
   hit_enemy_factor:            3.0
   hit_own_factor:             -5.0
   mission_accomplished_factor: 10.0
@@ -55,6 +55,24 @@ algo:
   max_grad_norm:   0.5
   learning_rate:   3.0e-4
   hidden_sizes:    [256, 256]
+
+# Combat area boundaries in normalized observation coordinates.
+# Calibration reference (from probe):
+#   Blue starts at own_x_pos=0.00, own_z_pos=+0.1851  (config z=+30)
+#   Red  starts at own_x_pos=0.00, own_z_pos=-0.1851  (config z=-30)
+#
+# To find the area size for "10 seconds to cross":
+#   1. Run a short training and log own_z_pos over consecutive steps
+#   2. Measure delta_z per step at full speed (own_current_speed=1.0)
+#   3. Set width = delta_z * 10
+#
+# Set to null to disable combat area (no boundary obs, no penalty).
+combat_area:
+  x_min: -0.20   # lateral left boundary  (normalized own_x_pos)
+  x_max:  0.20   # lateral right boundary
+  z_min: -0.25   # longitudinal near boundary (normalized own_z_pos)
+  z_max:  0.25   # longitudinal far boundary
+  out_penalty: -1.0   # reward penalty per step when any blue agent is outside
 
 logging:
   exp_name:            "mappo_b_ace"
