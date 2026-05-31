@@ -29,6 +29,8 @@ agents:
     init_hdg: 0.0
     target_position: {x: 0.0, y: 25000.0, z: 30.0}
     rnd_offset_range: {x: 10.0, y: 10000.0, z: 5.0}
+    fighter_spec: "res://assets/specs/default_fighter_spec.json"
+    missile_spec:  "res://assets/specs/default_missile_spec.json"
   red:
     num_agents: 2
     base_behavior: "baseline1"
@@ -39,6 +41,8 @@ agents:
       dShot:  [0.50, 0.99, 1.04]
       lCrank: [0.98, 0.96, 1.14]
       lBreak: [1.17, 0.51, 1.05]
+    fighter_spec: "res://assets/specs/default_fighter_spec.json"
+    missile_spec:  "res://assets/specs/default_missile_spec.json"
 
 algo:
   num_envs:        28

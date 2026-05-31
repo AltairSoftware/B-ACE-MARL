@@ -1,0 +1,16 @@
+{
+    "_comment": "Aircraft performance parameters. Copy this file and change the path in config.yaml to use custom specs.",
+
+    "max_speed_kts":    650,
+    "max_altitude_ft":  50000,
+    "min_altitude_ft":  1000,
+    "max_g":            9.0,
+    "max_pitch_deg":    35.0,
+    "min_pitch_deg":    -15.0,
+
+    "radar_range_nm":   50.0,
+    "radar_hfov_deg":   [-60.0, 60.0],
+    "radar_vfov_deg":   [-20.0, 40.0],
+
+    "missiles_count":   6
+}

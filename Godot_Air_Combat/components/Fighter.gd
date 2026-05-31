@@ -73,11 +73,13 @@ var max_speed = 650 * SConv.KNOT2GDM_S
 var max_level = 50000 * SConv.FT2GDM
 var min_level = 1000  * SConv.FT2GDM
 
-const max_g = 9.0
+var max_g = 9.0   # changed from const to var to allow spec override
 
 var max_pitch = 35.0
 var min_pitch = -15.0
 var pitch_speed = 0.5
+
+var missile_spec = null  # loaded from missile_spec path in agent config
 
 func altitude_speed_factor (alt):
 	return 0.2 * alt / 76.2 + 0.8 #25000ft is base alt for speed
@@ -248,6 +250,26 @@ func update_init_config(config, rewConfig = {}):
 	rNez_calc = Expression.new()
 	rNez_calc.parse(wezModels["RNEZ_MODEL"], input_data)	
 	
+	# Fighter performance spec (optional — uses hardcoded defaults if not provided)
+	if init_config.has("fighter_spec"):
+		var fighter_spec = load_json_file(init_config["fighter_spec"])
+		if fighter_spec:
+			max_speed  = fighter_spec["max_speed_kts"]   * SConv.KNOT2GDM_S
+			max_level  = fighter_spec["max_altitude_ft"] * SConv.FT2GDM
+			min_level  = fighter_spec["min_altitude_ft"] * SConv.FT2GDM
+			max_g      = fighter_spec["max_g"]
+			max_pitch  = fighter_spec["max_pitch_deg"]
+			min_pitch  = fighter_spec["min_pitch_deg"]
+			radar_range = fighter_spec["radar_range_nm"] * SConv.NM2GDM
+			radar_hfov  = fighter_spec["radar_hfov_deg"]
+			radar_vfov  = fighter_spec["radar_vfov_deg"]
+			missiles    = fighter_spec["missiles_count"]
+
+	# Missile performance spec (passed to each missile at launch time)
+	missile_spec = null
+	if init_config.has("missile_spec"):
+		missile_spec = load_json_file(init_config["missile_spec"])
+
 	set_behavior(init_config["base_behavior"])
 	share_tracks = init_config["share_tracks"] == 1
 	share_states = init_config["share_states"] == 1
@@ -990,11 +1012,14 @@ func launch_missile_at_target(target_track):
 				in_flight_missile.missile_track.is_missile_support = false																
 				
 		var new_missile = missile.instantiate()
-		#change_mesh_instance_colors(new_missile, team_color)		
-		manager.add_child(new_missile)										
+		#change_mesh_instance_colors(new_missile, team_color)
+		manager.add_child(new_missile)
 		new_missile.add_to_group(simGroups.MISSILE)
 		new_missile.global_position = global_position
-		
+
+		if missile_spec != null:
+			new_missile.setup(missile_spec)
+
 		new_missile.launch(self, target_track)
 		target_track.is_missile_support = true			
 		

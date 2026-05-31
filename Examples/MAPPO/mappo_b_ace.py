@@ -74,6 +74,8 @@ def build_b_ace_config(cfg: dict) -> dict:
                 "init_hdg":         a["blue"]["init_hdg"],
                 "target_position":  a["blue"]["target_position"],
                 "rnd_offset_range": a["blue"]["rnd_offset_range"],
+                "fighter_spec":     a["blue"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json"),
+                "missile_spec":     a["blue"].get("missile_spec",  "res://assets/specs/default_missile_spec.json"),
             },
             "red_agents": {
                 "num_agents":    a["red"]["num_agents"],
@@ -82,6 +84,8 @@ def build_b_ace_config(cfg: dict) -> dict:
                 "init_position": a["red"]["init_position"],
                 "init_hdg":      a["red"]["init_hdg"],
                 "beh_config":    a["red"]["beh_config"],
+                "fighter_spec":  a["red"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json"),
+                "missile_spec":  a["red"].get("missile_spec",  "res://assets/specs/default_missile_spec.json"),
             },
         },
     }

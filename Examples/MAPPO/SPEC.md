@@ -448,12 +448,60 @@ done = any(terminations.values()) or any(truncations.values())
 
 ## 11. 既存実装との対応表
 
-| 機能 | BenchMARL | Tianshou | **CleanRL (本実装)** |
+| 機能 | BenchMARL | Tianshou | **MAPPO (本実装)** |
 |------|-----------|----------|---------------------|
 | アルゴリズム | ISAC / MAPPO 等 | DDPG | **MAPPO** |
 | Critic | 各実装依存 | 独立 (IDDPG) | **集中型 (CTDE)** |
 | 環境ラッパー | BenchMARL 専用 | PettingZoo | **PettingZoo** |
 | ログ | TensorBoard | なし | **TensorBoard** |
-| 設定 | YAML | Python dict | **YAML + CLI** |
-| 並列化 | TorchRL | DummyVectorEnv | **自前 VecEnv** |
+| 設定 | YAML | Python dict | **YAML のみ** |
+| 並列化 | TorchRL | DummyVectorEnv | **ThreadPoolExecutor** |
 | 主要依存 | BenchMARL, TorchRL | Tianshou | **PyTorch のみ** |
+
+---
+
+## 12. 保留事項
+
+### 12.1 CPU 利用率の向上（並列化改善）
+
+**概要**: 現在の `ThreadPoolExecutor` による並列化は TCP ソケット I/O の並列化に効果的だが、Python の学習ループ（GAE 計算・PPO 更新）は単一コアのみ使用している。
+
+**やりたいこと**: 学習ループ自体を GPU または複数コアで高速化する。
+
+**検討内容**:
+- PyTorch の GPU 対応（`device: cuda`）
+- 複数ワーカーによる rollout 収集の並列化
+
+**現状**: CPU 使用率 50%、メモリ使用率 16% の環境で `num_envs=28` を使用中。
+
+---
+
+### 12.2 戦闘空域の Godot 可視化
+
+**概要**: `config.yaml` の `combat_area` で定義した戦闘空域の境界を、Godot のシミュレーション画面上に描画する。
+
+**やりたいこと**:
+- `renderize: 1` のとき、戦闘空域の四隅を赤線の矩形で表示する
+- 空域外に出た機体を視覚的に識別しやすくする
+
+**実装方針**:
+1. `ViewPort.gd` に `draw_combat_area(mesh, area)` 関数を追加（`draw_grid()` と同じ `ImmediateMesh` + `PRIMITIVE_LINES` を使用）
+2. `build_b_ace_config()` で `combat_area` を Godot 世界座標に変換して `EnvConfig` に追加
+3. `SimManager.gd` または `B_ACE.gd` で config を受け取り Viewport に渡す
+
+**必要なもの**:
+- Godot Engine 4.4（無料）
+- .NET SDK 6.0 以上（C# コンポーネント用）
+- エクスポートテンプレート（.exe 再生成時のみ）
+
+**未解決の課題**:
+- 正規化 obs 座標（`own_x_pos`, `own_z_pos`）と Godot 世界座標のスケール変換係数が未確定
+- `SimManager.gd` の `initialize()` にデバッグ出力を追加して Blue 機の初期 `global_position` を確認することで解決できる
+
+**開発手順**（確認済み）:
+```yaml
+# config.yaml でデバッグモードにする
+env:
+  env_path: "debug"   # Godot エディタから ▶ Play して接続
+```
+→ Godot エディタから実行すれば .exe の再エクスポートなしにテスト可能

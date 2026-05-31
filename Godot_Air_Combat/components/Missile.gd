@@ -31,6 +31,14 @@ var min_offset = Vector3(0.0001, 0.0001, 0.0001)
 func is_type(type): return type == "Missile"
 func get_type(): return "Missile"
 
+func setup(spec: Dictionary) -> void:
+	if spec.has("max_speed"):
+		max_speed = spec["max_speed"]
+	if spec.has("turn_speed"):
+		turn_speed = spec["turn_speed"]
+	if spec.has("max_time_of_flight_sec"):
+		max_time_of_flight = spec["max_time_of_flight_sec"]
+
 func _ready():
 	# No need to set gravity_scale = 0, CharacterBody3D doesn't have gravity by default.
 	pass

@@ -1,0 +1,7 @@
+{
+    "_comment": "Missile performance parameters. Copy this file and change the path in config.yaml to use custom specs.",
+
+    "max_speed":              10.0,
+    "turn_speed":             2.0,
+    "max_time_of_flight_sec": 50.0
+}
