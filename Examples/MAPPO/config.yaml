@@ -1,0 +1,63 @@
+# B-ACE CleanRL MAPPO configuration
+# Edit this file to change scenario, rewards, and hyperparameters.
+
+env:
+  env_path: "../../bin/B_ACE_v0.1.exe"
+  renderize: 0          # 0: headless (training), 1: display (debug)
+  speed_up: 50000
+  max_cycles: 36000
+  seed: 1
+  action_type: "Low_Level_Continuous"
+
+rewards:
+  mission_factor:              0.001
+  missile_fire_factor:        -0.1
+  missile_no_fire_factor:     -0.001
+  missile_miss_factor:        -0.5
+  detect_loss_factor:         -0.1
+  keep_track_factor:           0.001
+  hit_enemy_factor:            3.0
+  hit_own_factor:             -5.0
+  mission_accomplished_factor: 10.0
+
+agents:
+  blue:
+    num_agents: 2
+    base_behavior: "external"
+    mission: "DCA"
+    init_position: {x: 0.0, y: 25000.0, z: 30.0}
+    init_hdg: 0.0
+    target_position: {x: 0.0, y: 25000.0, z: 30.0}
+    rnd_offset_range: {x: 10.0, y: 10000.0, z: 5.0}
+  red:
+    num_agents: 2
+    base_behavior: "baseline1"
+    mission: "striker"
+    init_position: {x: 0.0, y: 25000.0, z: -30.0}
+    init_hdg: 180.0
+    beh_config:
+      dShot:  [0.50, 0.99, 1.04]
+      lCrank: [0.98, 0.96, 1.14]
+      lBreak: [1.17, 0.51, 1.05]
+
+algo:
+  num_envs:        28
+  num_steps:       2048        # number of steps until updating policy
+  total_timesteps: 3000000
+  update_epochs:   4
+  num_minibatches: 4
+  gamma:           0.99
+  gae_lambda:      0.95
+  clip_coef:       0.2
+  clip_vloss:      true
+  ent_coef:        0.01
+  vf_coef:         0.5
+  max_grad_norm:   0.5
+  learning_rate:   3.0e-4
+  hidden_sizes:    [256, 256]
+
+logging:
+  exp_name:            "mappo_b_ace"
+  save_dir:            "Results"
+  checkpoint_interval: 100   # iterations between checkpoints
+  restore: null              # set to a checkpoint path to resume, e.g. "Results/mappo_b_ace_xxx/checkpoint_100.pt"

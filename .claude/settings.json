@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python Examples/CleanRL/mappo_b_ace.py)",
+      "Bash(python Examples/CleanRL/networks.py)",
+      "Bash(python -c \"import yaml; print\\('pyyaml OK:', yaml.__version__\\)\")",
+      "Bash(python Examples/CleanRL/mappo_b_ace.py --algo.total_timesteps 5000 --algo.num_steps 256 --algo.num_envs 2 --logging.exp_name \"vecenv_2\")",
+      "WebFetch(domain:docs.cleanrl.dev)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(python Examples/CleanRL/mappo_b_ace.py --algo.total_timesteps 5000 --algo.num_steps 256 --algo.num_envs 1 --logging.exp_name \"refactor_test\")",
+      "Bash(python Examples/CleanRL/mappo_b_ace.py --algo.total_timesteps 5000 --algo.num_steps 256 --algo.num_envs 2 --logging.exp_name \"refactor_test_2env\")",
+      "PowerShell(Rename-Item -Path \"C:\\\\Users\\\\yoshi\\\\Workspace\\\\B-ACE-MARL\\\\Examples\\\\CleanRL\" -NewName \"MAPPO\")",
+      "Bash(git mv *)"
+    ]
+  }
+}
