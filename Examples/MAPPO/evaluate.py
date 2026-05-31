@@ -5,9 +5,9 @@ Loads a trained actor from a checkpoint and runs the policy in the
 B-ACE environment for visual inspection.
 
 Before running:
-  1. Set eval.checkpoint in config.yaml to the path of the saved model.
-  2. Set env.renderize to 1 in config.yaml to see the Godot window.
-  3. Adjust eval.n_episodes and eval.deterministic as needed.
+  1. Set eval.checkpoint in eval_config.yaml to the path of the saved model.
+  2. Adjust eval.n_episodes and eval.deterministic as needed.
+  3. env.renderize and env.speed_up are already set for visual inspection.
 
 Usage:
     python evaluate.py
@@ -40,7 +40,7 @@ from mappo_b_ace import build_b_ace_config
 # ---------------------------------------------------------------------------
 
 def evaluate() -> None:
-    with open("config.yaml") as f:
+    with open("eval_config.yaml") as f:
         cfg = yaml.safe_load(f)
 
     eval_cfg = cfg.get("eval", {})

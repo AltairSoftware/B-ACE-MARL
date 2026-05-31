@@ -61,8 +61,3 @@ logging:
   save_dir:            "Results"
   checkpoint_interval: 10   # iterations between checkpoints
   restore: null              # set to a checkpoint path to resume, e.g. "Results/mappo_b_ace_xxx/checkpoint_100.pt"
-
-eval:
-  checkpoint: Results\mappo_b_ace_20260531_215950\final.pt     # path to checkpoint, e.g. "Results/mappo_b_ace_xxx/final.pt"
-  n_episodes: 10       # number of episodes to run
-  deterministic: true  # true: mean action (recommended), false: sample stochastically

@@ -1,0 +1,38 @@
+# B-ACE MAPPO evaluation configuration
+# Edit this file to configure policy evaluation.
+
+env:
+  env_path: "../../bin/B_ACE_v0.1.exe"
+  renderize: 1          # 1: show Godot window (recommended for evaluation)
+  speed_up: 50           # slow down simulation to observe agent behavior
+  max_cycles: 36000
+  seed: 1
+  action_type: "Low_Level_Continuous"
+
+agents:
+  blue:
+    num_agents: 2
+    base_behavior: "external"
+    mission: "DCA"
+    init_position: {x: 0.0, y: 25000.0, z: 30.0}
+    init_hdg: 0.0
+    target_position: {x: 0.0, y: 25000.0, z: 30.0}
+    rnd_offset_range: {x: 10.0, y: 10000.0, z: 5.0}
+  red:
+    num_agents: 2
+    base_behavior: "baseline1"
+    mission: "striker"
+    init_position: {x: 0.0, y: 25000.0, z: -30.0}
+    init_hdg: 180.0
+    beh_config:
+      dShot:  [0.50, 0.99, 1.04]
+      lCrank: [0.98, 0.96, 1.14]
+      lBreak: [1.17, 0.51, 1.05]
+
+algo:
+  hidden_sizes: [256, 256]   # must match the network used during training
+
+eval:
+  checkpoint: "Results/mappo_b_ace_20260531_215950/final.pt"
+  n_episodes: 10       # number of episodes to run
+  deterministic: true  # true: mean action (no noise), false: sample stochastically
