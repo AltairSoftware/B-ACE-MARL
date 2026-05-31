@@ -178,7 +178,7 @@ def train(
     T       = algo["num_steps"]
 
     print("=" * 60)
-    print(f"B-ACE CleanRL MAPPO  exp={log_cfg['exp_name']}  n_envs={n_envs}")
+    print(f"B-ACE MAPPO  exp={log_cfg['exp_name']}  n_envs={n_envs}")
     print("=" * 60)
     print(f"  lr={algo['learning_rate']}  steps={T}  "
           f"total={algo['total_timesteps']:,}  epochs={algo['update_epochs']}")

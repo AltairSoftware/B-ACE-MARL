@@ -1,4 +1,4 @@
-# B-ACE CleanRL MAPPO configuration
+# B-ACE MAPPO configuration
 # Edit this file to change scenario, rewards, and hyperparameters.
 
 env:
@@ -42,7 +42,7 @@ agents:
 
 algo:
   num_envs:        28
-  num_steps:       2048        # number of steps until updating policy
+  num_steps:       1024        # number of steps until updating policy
   total_timesteps: 3000000
   update_epochs:   4
   num_minibatches: 4
@@ -59,5 +59,10 @@ algo:
 logging:
   exp_name:            "mappo_b_ace"
   save_dir:            "Results"
-  checkpoint_interval: 100   # iterations between checkpoints
+  checkpoint_interval: 10   # iterations between checkpoints
   restore: null              # set to a checkpoint path to resume, e.g. "Results/mappo_b_ace_xxx/checkpoint_100.pt"
+
+eval:
+  checkpoint: Results\mappo_b_ace_20260531_211819\checkpoint_20.pt     # path to checkpoint, e.g. "Results/mappo_b_ace_xxx/final.pt"
+  n_episodes: 10       # number of episodes to run
+  deterministic: true  # true: mean action (recommended), false: sample stochastically

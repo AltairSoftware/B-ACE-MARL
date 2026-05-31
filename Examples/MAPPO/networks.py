@@ -64,6 +64,11 @@ class MAPPOActor(nn.Module):
         entropy = dist.entropy().sum(-1)
         return action, log_prob, entropy
 
+    def get_deterministic_action(self, obs: torch.Tensor) -> torch.Tensor:
+        """Return the mean action with no sampling noise. Use for evaluation."""
+        mu, _ = self(obs)
+        return torch.tanh(mu)
+
     def get_log_prob_entropy(
         self, obs: torch.Tensor, action: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -114,12 +119,15 @@ if __name__ == "__main__":
     global_obs = torch.randn(BATCH, OBS_DIM * N_AGENTS)
 
     action, log_prob, entropy = actor.get_action(obs)
+    det_action = actor.get_deterministic_action(obs)
     value = critic(global_obs)
 
-    print(f"obs shape       : {obs.shape}")
-    print(f"action shape    : {action.shape}   (expected: ({BATCH}, {ACTION_DIM}))")
-    print(f"log_prob shape  : {log_prob.shape}  (expected: ({BATCH},))")
-    print(f"entropy shape   : {entropy.shape}   (expected: ({BATCH},))")
-    print(f"value shape     : {value.shape}     (expected: ({BATCH}, 1))")
-    print(f"action range    : [{action.min():.3f}, {action.max():.3f}]  (should be in (-1, 1))")
+    print(f"obs shape           : {obs.shape}")
+    print(f"action shape        : {action.shape}       (expected: ({BATCH}, {ACTION_DIM}))")
+    print(f"log_prob shape      : {log_prob.shape}      (expected: ({BATCH},))")
+    print(f"entropy shape       : {entropy.shape}       (expected: ({BATCH},))")
+    print(f"det_action shape    : {det_action.shape}   (expected: ({BATCH}, {ACTION_DIM}))")
+    print(f"value shape         : {value.shape}       (expected: ({BATCH}, 1))")
+    print(f"action range        : [{action.min():.3f}, {action.max():.3f}]  (should be in (-1, 1))")
+    print(f"det_action range    : [{det_action.min():.3f}, {det_action.max():.3f}]  (should be in (-1, 1))")
     print("networks.py self-test passed.")
