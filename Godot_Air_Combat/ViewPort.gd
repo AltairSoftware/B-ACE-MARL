@@ -28,6 +28,7 @@ var help_popup = null
 func _ready():
 	cameraGlobal = $CameraGlobal
 	cameraGlobal.make_current()
+	cameraGlobal.fov = 30.0
 	#cameraGlobal.position.y = zoom_level
 	
 	var grid_mesh = ImmediateMesh.new()
@@ -75,6 +76,7 @@ func _input(event):
 			cameraGlobal.make_current()
 			cameraGlobal.rotation_degrees = Vector3(-90, 0, 0)
 			cameraGlobal.position = Vector3(0, 2500, 0)
+			cameraGlobal.fov = 30.0
 			camera_angle_v = 0
 			camera_angle_h = 0
 			

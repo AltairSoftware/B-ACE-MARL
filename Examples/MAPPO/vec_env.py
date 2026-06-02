@@ -58,6 +58,10 @@ class PettingZooVecEnv:
     _X_IDX = 0
     _Z_IDX = 1
 
+    # combat_area values are in NM; observations are normalized by 3000 GDM.
+    # NM -> normalized: NM * NM2GDM / 3000 = NM * (1852/100) / 3000
+    _NM_TO_NORM = 1852.0 / 100.0 / 3000.0
+
     def __init__(
         self,
         env_fns: list[Callable[[], B_ACE_GodotPettingZooWrapper]],
@@ -104,15 +108,22 @@ class PettingZooVecEnv:
         x = obs[:, self._X_IDX]          # own_x_pos, shape (n_agents,)
         z = obs[:, self._Z_IDX]          # own_z_pos, shape (n_agents,)
 
-        area_w = ca["x_max"] - ca["x_min"]
-        area_d = ca["z_max"] - ca["z_min"]
+        # Convert NM boundaries to normalized obs coordinates
+        k = self._NM_TO_NORM
+        x_min = ca["x_min"] * k
+        x_max = ca["x_max"] * k
+        z_min = ca["z_min"] * k
+        z_max = ca["z_max"] * k
+
+        area_w = x_max - x_min
+        area_d = z_max - z_min
 
         boundary = np.column_stack([
-            (x - ca["x_min"]) / area_w,   # dist to x_min (left)
-            (ca["x_max"] - x) / area_w,   # dist to x_max (right)
-            (z - ca["z_min"]) / area_d,   # dist to z_min (near)
-            (ca["z_max"] - z) / area_d,   # dist to z_max (far)
-        ])                                # shape (n_agents, 4)
+            (x - x_min) / area_w,   # dist to x_min (left)
+            (x_max - x) / area_w,   # dist to x_max (right)
+            (z - z_min) / area_d,   # dist to z_min (near)
+            (z_max - z) / area_d,   # dist to z_max (far)
+        ])                           # shape (n_agents, 4)
 
         return np.concatenate([obs, boundary], axis=1)
 

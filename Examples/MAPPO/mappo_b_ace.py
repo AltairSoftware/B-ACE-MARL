@@ -61,6 +61,7 @@ def build_b_ace_config(cfg: dict) -> dict:
             "max_cycles":  e["max_cycles"],
             "seed":        e["seed"],
             "action_type": e["action_type"],
+            "combat_area": cfg.get("combat_area"),
             "RewardsConfig": {
                 "mission_factor":              r["mission_factor"],
                 "missile_fire_factor":         r["missile_fire_factor"],
@@ -124,19 +125,22 @@ def make_reward_fn(cfg: dict):
     """
     area = cfg.get("combat_area")
 
+    # combat_area values are in NM; observations are normalized by 3000 GDM.
+    _NM_TO_NORM = 1852.0 / 100.0 / 3000.0
+
     def reward_fn(obs: np.ndarray, reward: float, done: bool) -> float:
         if area is None:
             return reward
 
-        # obs[:, 0] = own_x_pos,  obs[:, 1] = own_z_pos
+        # obs[:, 0] = own_x_pos,  obs[:, 1] = own_z_pos  (normalized coords)
         x_pos = obs[:, 0]
         z_pos = obs[:, 1]
 
         outside = (
-            np.any(x_pos < area["x_min"]) or
-            np.any(x_pos > area["x_max"]) or
-            np.any(z_pos < area["z_min"]) or
-            np.any(z_pos > area["z_max"])
+            np.any(x_pos < area["x_min"] * _NM_TO_NORM) or
+            np.any(x_pos > area["x_max"] * _NM_TO_NORM) or
+            np.any(z_pos < area["z_min"] * _NM_TO_NORM) or
+            np.any(z_pos > area["z_max"] * _NM_TO_NORM)
         )
         if outside:
             reward += area.get("out_penalty", -0.0001)
@@ -151,7 +155,7 @@ def make_reward_fn(cfg: dict):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    with open("config.yaml") as f:
+    with open("config.yaml", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
     restore = cfg["logging"].get("restore")

@@ -622,7 +622,10 @@ func _wait_for_configuration():
 		return true		
 		
 	var env_config_msg 	= config_message['env_config']
-	update_dict(envConfig,env_config_msg)
+	update_dict(envConfig, env_config_msg)
+	# combat_area is not in the default config, so bypass update_dict
+	if env_config_msg.has("combat_area"):
+		envConfig["combat_area"] = env_config_msg["combat_area"]
 	
 	phy_fps 		= int(envConfig["phy_fps"])
 	speed_up 		= int(envConfig["speed_up"])

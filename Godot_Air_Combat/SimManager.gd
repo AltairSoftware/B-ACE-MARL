@@ -46,27 +46,74 @@ var ready_to_reset = true
 var initialized = false
 	
 func initialize(_id, _tree, _envConfig, _agentsConfig):
-		
+
 	id = _id
-	tree = _tree	
-	
+	tree = _tree
+
 	envConfig = _envConfig
-	
+
 	action_repeat	= int(envConfig["action_repeat"])
 	max_cycles		= int(envConfig["max_cycles"])
 	stop_mission    = int(envConfig["stop_mission"])
-	
-	agentsConfig = _agentsConfig.duplicate(true)	
+
+	agentsConfig = _agentsConfig.duplicate(true)
 	simGroups = SimGroups.new(id)
-		
-	_set_agents(_tree)	 		
+
+	_set_agents(_tree)
 	_set_heuristic("AP")
-	
+	_draw_combat_area()
+
 	_reset_simulation()
-	
+
 	initialized = true
 	ready_to_reset = false
 	set_process_mode_recursively(self, true)
+
+func _draw_combat_area():
+	var ca = envConfig.get("combat_area", null)
+	if ca == null or not ca is Dictionary or ca.is_empty():
+		return
+
+	var x_min = float(ca["x_min"]) * SConv.NM2GDM
+	var x_max = float(ca["x_max"]) * SConv.NM2GDM
+	var z_min = float(ca["z_min"]) * SConv.NM2GDM
+	var z_max = float(ca["z_max"]) * SConv.NM2GDM
+	var y_lo  = 0.0
+	var y_hi  = 50000.0 * SConv.FT2GDM
+
+	var mesh = ImmediateMesh.new()
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+
+	var edges = [
+		[Vector3(x_min, y_lo, z_min), Vector3(x_max, y_lo, z_min)],
+		[Vector3(x_max, y_lo, z_min), Vector3(x_max, y_lo, z_max)],
+		[Vector3(x_max, y_lo, z_max), Vector3(x_min, y_lo, z_max)],
+		[Vector3(x_min, y_lo, z_max), Vector3(x_min, y_lo, z_min)],
+		[Vector3(x_min, y_hi, z_min), Vector3(x_max, y_hi, z_min)],
+		[Vector3(x_max, y_hi, z_min), Vector3(x_max, y_hi, z_max)],
+		[Vector3(x_max, y_hi, z_max), Vector3(x_min, y_hi, z_max)],
+		[Vector3(x_min, y_hi, z_max), Vector3(x_min, y_hi, z_min)],
+		[Vector3(x_min, y_lo, z_min), Vector3(x_min, y_hi, z_min)],
+		[Vector3(x_max, y_lo, z_min), Vector3(x_max, y_hi, z_min)],
+		[Vector3(x_max, y_lo, z_max), Vector3(x_max, y_hi, z_max)],
+		[Vector3(x_min, y_lo, z_max), Vector3(x_min, y_hi, z_max)],
+	]
+	for edge in edges:
+		mesh.surface_add_vertex(edge[0])
+		mesh.surface_add_vertex(edge[1])
+
+	mesh.surface_end()
+
+	var material = StandardMaterial3D.new()
+	material.flags_unshaded = true
+	material.flags_transparent = true
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(1.0, 0.85, 0.0, 0.6)
+
+	var instance = MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.material_override = material
+	add_child(instance)
 	
 func set_process_mode_recursively(node, _process_mode):
 	node.set_process(_process_mode)
@@ -183,7 +230,7 @@ func _physics_process(delta):
 func _set_agents(_tree):	
 				
 	#Scale Vectors only for Visualization	
-	const visual_scaleVector = Vector3(4.0,  4.0,  4.0)
+	const visual_scaleVector = Vector3(0.4,  0.4,  0.4)
 	
 	var listComponents = []	
 	for i in range(int(agentsConfig["blue_agents"]["num_agents"])):
@@ -234,7 +281,7 @@ func _set_agents(_tree):
 			
 			newFigther.max_trail_points = envConfig["max_trail_size"] 
 									
-			blue_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)			
+			blue_config["offset_pos"] = Vector3(offset_x * 0.5, 0.0, 0.0)			
 			newFigther.update_init_config(blue_config, envConfig["RewardsConfig"])			
 			newFigther.reset()
 											
@@ -259,7 +306,7 @@ func _set_agents(_tree):
 			
 			newFigther.max_trail_points = envConfig["max_trail_size"] 
 			
-			red_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)			
+			red_config["offset_pos"] = Vector3(offset_x * 0.5, 0.0, 0.0)			
 			newFigther.update_init_config(red_config, envConfig["RewardsConfig"])			
 			newFigther.reset()				
 																										

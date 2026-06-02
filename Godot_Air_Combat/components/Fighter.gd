@@ -23,7 +23,7 @@ var trail_color_start: Color = Color(1.0, 1.0, 1.0, 0.0) # Starting color
 var trail_color_end: Color = Color(1.0, 1.0, 1.0, 1.0) # Ending color (transparent)
 var trail_start_alpha: float =  1.0  # Start color: red, semi-transparent
 var trail_end_alpha: float = 0.0
-var trail_thickness: float = 8.0  # Set the thickness of the trail  
+var trail_thickness: float = 0.8  # Set the thickness of the trail
 
 var manager = null
 var tree = null

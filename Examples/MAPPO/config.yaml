@@ -4,7 +4,7 @@
 env:
   env_path: "../../bin/B_ACE_v0.1_custom.exe"
   renderize: 1          # 0: headless (training), 1: display (debug)
-  speed_up: 50
+  speed_up: 1
   max_cycles: 36000
   seed: 1
   action_type: "Low_Level_Continuous"
@@ -25,9 +25,9 @@ agents:
     num_agents: 2
     base_behavior: "external"
     mission: "DCA"
-    init_position: {x: 0.0, y: 25000.0, z: 30.0}
+    init_position: {x: 0.0, y: 25000.0, z: 0.8}      # x,z:NM, y:ft
     init_hdg: 0.0
-    target_position: {x: 0.0, y: 25000.0, z: 30.0}
+    target_position: {x: 0.0, y: 25000.0, z: 0.8}
     rnd_offset_range: {x: 10.0, y: 10000.0, z: 5.0}
     fighter_spec: "fighter_spec.json"
     missile_spec:  "missile_spec.json"
@@ -35,7 +35,7 @@ agents:
     num_agents: 2
     base_behavior: "baseline1"
     mission: "striker"
-    init_position: {x: 0.0, y: 25000.0, z: -30.0}
+    init_position: {x: 0.0, y: 25000.0, z: -0.8}
     init_hdg: 180.0
     beh_config:
       dShot:  [0.50, 0.99, 1.04]
@@ -60,22 +60,15 @@ algo:
   learning_rate:   3.0e-4
   hidden_sizes:    [256, 256]
 
-# Combat area boundaries in normalized observation coordinates.
-# Calibration reference (from probe):
-#   Blue starts at own_x_pos=0.00, own_z_pos=+0.1851  (config z=+30)
-#   Red  starts at own_x_pos=0.00, own_z_pos=-0.1851  (config z=-30)
-#
-# To find the area size for "10 seconds to cross":
-#   1. Run a short training and log own_z_pos over consecutive steps
-#   2. Measure delta_z per step at full speed (own_current_speed=1.0)
-#   3. Set width = delta_z * 10
+# Combat area boundaries in NM (nautical miles) -- same scale as init_position x/z.
+# Conversion to normalized obs coords: NM * 18.52 / 3000  (applied in vec_env.py)
 #
 # Set to null to disable combat area (no boundary obs, no penalty).
 combat_area:
-  x_min: -0.20   # lateral left boundary  (normalized own_x_pos)
-  x_max:  0.20   # lateral right boundary
-  z_min: -0.25   # longitudinal near boundary (normalized own_z_pos)
-  z_max:  0.25   # longitudinal far boundary
+  x_min: -1   # lateral left boundary  (NM)
+  x_max:  1   # lateral right boundary (NM)
+  z_min: -1   # longitudinal near boundary (NM)
+  z_max:  1   # longitudinal far boundary (NM)
   out_penalty: -1.0   # reward penalty per step when any blue agent is outside
 
 logging:

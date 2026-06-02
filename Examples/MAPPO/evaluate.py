@@ -85,7 +85,7 @@ def build_eval_b_ace_config(cfg: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 def evaluate() -> None:
-    with open("eval_config.yaml") as f:
+    with open("eval_config.yaml", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
     eval_cfg = cfg.get("eval", {})

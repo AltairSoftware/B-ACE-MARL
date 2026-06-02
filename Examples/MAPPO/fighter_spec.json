@@ -1,7 +1,7 @@
 {
     "_comment": "Aircraft performance parameters. Copy this file and change the path in config.yaml to use custom specs.",
 
-    "max_speed_kts":    1000,
+    "max_speed_kts":    650,
     "max_altitude_ft":  50000,
     "min_altitude_ft":  1000,
     "max_g":            9.0,
