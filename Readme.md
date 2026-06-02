@@ -1,3 +1,5 @@
+**本プロジェクトはB-ACEをベースに改変したものである。**
+
 # B-ACE: Beyond Visual Range Air Combat Environment
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/) [![PettingZoo Compatible](https://img.shields.io/badge/PettingZoo-Compatible-green.svg)](https://pettingzoo.farama.org/)
