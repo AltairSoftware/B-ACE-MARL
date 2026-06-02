@@ -41,6 +41,14 @@ from ppo import train  # noqa: E402
 # Edit this function when you add new environment options to config.yaml.
 # ---------------------------------------------------------------------------
 
+def _resolve_spec_path(path: str) -> str:
+    """Convert a relative OS path to absolute so Godot can open it reliably.
+    Paths that start with 'res://' or 'user://' are left unchanged."""
+    if path.startswith("res://") or path.startswith("user://"):
+        return path
+    return str(Path(path).resolve())
+
+
 def build_b_ace_config(cfg: dict) -> dict:
     e = cfg["env"]
     a = cfg["agents"]
@@ -74,8 +82,8 @@ def build_b_ace_config(cfg: dict) -> dict:
                 "init_hdg":         a["blue"]["init_hdg"],
                 "target_position":  a["blue"]["target_position"],
                 "rnd_offset_range": a["blue"]["rnd_offset_range"],
-                "fighter_spec":     a["blue"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json"),
-                "missile_spec":     a["blue"].get("missile_spec",  "res://assets/specs/default_missile_spec.json"),
+                "fighter_spec":     _resolve_spec_path(a["blue"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json")),
+                "missile_spec":     _resolve_spec_path(a["blue"].get("missile_spec",  "res://assets/specs/default_missile_spec.json")),
             },
             "red_agents": {
                 "num_agents":    a["red"]["num_agents"],
@@ -84,8 +92,8 @@ def build_b_ace_config(cfg: dict) -> dict:
                 "init_position": a["red"]["init_position"],
                 "init_hdg":      a["red"]["init_hdg"],
                 "beh_config":    a["red"]["beh_config"],
-                "fighter_spec":  a["red"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json"),
-                "missile_spec":  a["red"].get("missile_spec",  "res://assets/specs/default_missile_spec.json"),
+                "fighter_spec":  _resolve_spec_path(a["red"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json")),
+                "missile_spec":  _resolve_spec_path(a["red"].get("missile_spec",  "res://assets/specs/default_missile_spec.json")),
             },
         },
     }

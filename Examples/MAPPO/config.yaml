@@ -2,9 +2,9 @@
 # Edit this file to change scenario, rewards, and hyperparameters.
 
 env:
-  env_path: "../../bin/B_ACE_v0.1.exe"
-  renderize: 0          # 0: headless (training), 1: display (debug)
-  speed_up: 100000
+  env_path: "../../bin/B_ACE_v0.1_custom.exe"
+  renderize: 1          # 0: headless (training), 1: display (debug)
+  speed_up: 50
   max_cycles: 36000
   seed: 1
   action_type: "Low_Level_Continuous"
@@ -29,8 +29,8 @@ agents:
     init_hdg: 0.0
     target_position: {x: 0.0, y: 25000.0, z: 30.0}
     rnd_offset_range: {x: 10.0, y: 10000.0, z: 5.0}
-    fighter_spec: "res://assets/specs/default_fighter_spec.json"
-    missile_spec:  "res://assets/specs/default_missile_spec.json"
+    fighter_spec: "fighter_spec.json"
+    missile_spec:  "missile_spec.json"
   red:
     num_agents: 2
     base_behavior: "baseline1"
@@ -45,7 +45,7 @@ agents:
     missile_spec:  "res://assets/specs/default_missile_spec.json"
 
 algo:
-  num_envs:        28
+  num_envs:        1
   num_steps:       1024        # number of steps until updating policy
   total_timesteps: 50000000
   update_epochs:   4
