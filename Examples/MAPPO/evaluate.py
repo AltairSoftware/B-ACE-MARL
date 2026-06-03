@@ -31,7 +31,19 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 from networks import MAPPOActor
-from vec_env import make_env as _make_single_env, PettingZooVecEnv
+from vec_env import make_env as _make_single_env, PettingZooVecEnv, RedTeamVecEnv
+from b_ace_py.red_team_policy import RedTeamPolicy
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _resolve_spec_path(path: str) -> str:
+    """Convert a relative OS path to absolute so Godot can open it reliably."""
+    if path.startswith("res://") or path.startswith("user://"):
+        return path
+    return str(Path(path).resolve())
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +65,7 @@ def build_eval_b_ace_config(cfg: dict) -> dict:
             "max_cycles":  e["max_cycles"],
             "seed":        e["seed"],
             "action_type": e["action_type"],
+            "combat_area": cfg.get("combat_area"),
         },
         "AgentsConfig": {
             "blue_agents": {
@@ -63,8 +76,8 @@ def build_eval_b_ace_config(cfg: dict) -> dict:
                 "init_hdg":         a["blue"]["init_hdg"],
                 "target_position":  a["blue"]["target_position"],
                 "rnd_offset_range": a["blue"]["rnd_offset_range"],
-                "fighter_spec":     a["blue"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json"),
-                "missile_spec":     a["blue"].get("missile_spec",  "res://assets/specs/default_missile_spec.json"),
+                "fighter_spec":     _resolve_spec_path(a["blue"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json")),
+                "missile_spec":     _resolve_spec_path(a["blue"].get("missile_spec",  "res://assets/specs/default_missile_spec.json")),
             },
             "red_agents": {
                 "num_agents":    a["red"]["num_agents"],
@@ -72,9 +85,11 @@ def build_eval_b_ace_config(cfg: dict) -> dict:
                 "mission":       a["red"]["mission"],
                 "init_position": a["red"]["init_position"],
                 "init_hdg":      a["red"]["init_hdg"],
+                "share_states":  a["red"].get("share_states", 1),
+                "share_tracks":  a["red"].get("share_tracks", 1),
                 "beh_config":    a["red"]["beh_config"],
-                "fighter_spec":  a["red"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json"),
-                "missile_spec":  a["red"].get("missile_spec",  "res://assets/specs/default_missile_spec.json"),
+                "fighter_spec":  _resolve_spec_path(a["red"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json")),
+                "missile_spec":  _resolve_spec_path(a["red"].get("missile_spec",  "res://assets/specs/default_missile_spec.json")),
             },
         },
     }
@@ -95,7 +110,7 @@ def evaluate() -> None:
 
     if not checkpoint_path:
         raise ValueError(
-            "eval.checkpoint is not set in config.yaml.\n"
+            "eval.checkpoint is not set in eval_config.yaml.\n"
             "Set it to the path of a saved model, e.g.:\n"
             "  eval:\n"
             "    checkpoint: Results/mappo_b_ace_xxx/final.pt"
@@ -111,22 +126,36 @@ def evaluate() -> None:
     print()
 
     # ── Environment ───────────────────────────────────────────────────────
-    # Use PettingZooVecEnv (n_envs=1) so that combat_area observation
-    # extension is applied consistently with training.
     b_ace_config = build_eval_b_ace_config(cfg)
     combat_area  = cfg.get("combat_area")
-    venv = PettingZooVecEnv(
-        [lambda: _make_single_env(b_ace_config, env_idx=0)],
-        combat_area=combat_area,
-    )
+    red_cfg      = cfg["agents"]["red"]
+
+    env_fns = [lambda: _make_single_env(b_ace_config, env_idx=0)]
+
+    if red_cfg.get("base_behavior") == "external":
+        # Mirror training: use RedTeamVecEnv so the actor only sees blue agents
+        # (n_agents = n_blue) and the red team is driven by RedTeamPolicy.
+        red_policy = RedTeamPolicy(
+            obs_maps={},
+            shot_threshold=red_cfg.get("shot_threshold", 0.85),
+            shot_variation=red_cfg.get("shot_variation",  0.10),
+            combat_area=combat_area,
+        )
+        venv = RedTeamVecEnv(env_fns, red_policy, combat_area=combat_area)
+        print(f"  red policy  : RedTeamPolicy (external)  n_red={venv._n_red}")
+    else:
+        venv = PettingZooVecEnv(env_fns, combat_area=combat_area)
+        print(f"  red policy  : {red_cfg['base_behavior']} (Godot FSM)")
 
     obs_dim    = venv.obs_dim
     action_dim = venv.action_dim
     n_agents   = venv.n_agents
 
-    print(f"obs_dim={obs_dim}  action_dim={action_dim}  n_agents={n_agents}")
+    print(f"  obs_dim={obs_dim}  action_dim={action_dim}  n_agents={n_agents}")
     if combat_area:
-        print(f"combat_area obs extension: +4 boundary values applied")
+        print(f"  combat_area: x=[{combat_area['x_min']}, {combat_area['x_max']}]"
+              f"  z=[{combat_area['z_min']}, {combat_area['z_max']}] NM  (+4 boundary obs)")
+    print()
 
     # ── Load actor ────────────────────────────────────────────────────────
     hidden = cfg["algo"]["hidden_sizes"]
@@ -139,9 +168,8 @@ def evaluate() -> None:
 
     # ── Episode loop ──────────────────────────────────────────────────────
     # VecEnv auto-resets on episode end. obs shape: (1, n_agents, obs_dim).
-    results  = []
-    obs = venv.reset()   # (1, n_agents, obs_dim)
-
+    results   = []
+    obs       = venv.reset()   # (1, n_agents, obs_dim)
     ep_reward = 0.0
     ep_len    = 0
     ep        = 0
@@ -171,7 +199,6 @@ def evaluate() -> None:
                 f"len={ep_len:4d}  reward={ep_reward:8.3f}"
             )
             results.append({"reward": ep_reward, "length": ep_len})
-            # VecEnv has already auto-reset; obs is already the new episode's first obs
             ep_reward = 0.0
             ep_len    = 0
 

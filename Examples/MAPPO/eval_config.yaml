@@ -1,11 +1,12 @@
 # B-ACE MAPPO evaluation configuration
 # Edit this file to configure policy evaluation.
+# All scenario parameters below must match config.yaml (training) exactly.
 
 env:
-  env_path: "../../bin/B_ACE_v0.1.exe"
+  env_path: "../../bin/B_ACE_v0.1_custom.exe"
   renderize: 1          # 1: show Godot window (recommended for evaluation)
-  speed_up: 50           # slow down simulation to observe agent behavior
-  max_cycles: 36000
+  speed_up: 1           # slow down simulation to observe agent behavior
+  max_cycles: 1200       # must match training
   seed: 1
   action_type: "Low_Level_Continuous"
 
@@ -14,34 +15,41 @@ agents:
     num_agents: 2
     base_behavior: "external"
     mission: "DCA"
-    init_position: {x: 0.0, y: 25000.0, z: 30.0}
+    init_position:    {x: 0.0, y: 25000.0, z: 0.8}
     init_hdg: 0.0
-    target_position: {x: 0.0, y: 25000.0, z: 30.0}
+    target_position:  {x: 0.0, y: 25000.0, z: 0.8}
     rnd_offset_range: {x: 10.0, y: 10000.0, z: 5.0}
+    fighter_spec: "fighter_spec.json"
+    missile_spec:  "res://assets/specs/default_missile_spec.json"
   red:
     num_agents: 2
-    base_behavior: "baseline1"
+    base_behavior: "external"         # must match training (RedTeamPolicy)
     mission: "striker"
-    init_position: {x: 0.0, y: 25000.0, z: -30.0}
+    init_position: {x: 0.0, y: 25000.0, z: -0.8}
     init_hdg: 180.0
-    beh_config:
-      dShot:  [0.50, 0.99, 1.04]
-      lCrank: [0.98, 0.96, 1.14]
-      lBreak: [1.17, 0.51, 1.05]
+    share_states: 1
+    share_tracks: 1
+    shot_threshold: 0.85
+    shot_variation: 0.10
+    beh_config:                       # kept for Godot config compatibility
+      dShot:  [0.85]
+      lCrank: [0.60]
+      lBreak: [0.95]
+    fighter_spec: "fighter_spec.json"
+    missile_spec:  "res://assets/specs/default_missile_spec.json"
 
-# Must match the combat_area used during training.
-# Set to null if training was done without combat_area.
+# Must match training exactly — combat_area adds 4 boundary obs values to obs_dim.
 combat_area:
-  x_min: -32.0   # NM
-  x_max:  32.0   # NM
-  z_min: -40.0   # NM
-  z_max:  40.0   # NM
-  out_penalty: -0.0001   # not used during evaluation, kept for consistency
+  x_min: -1   # NM
+  x_max:  1   # NM
+  z_min: -1   # NM
+  z_max:  1   # NM
+  out_penalty: -1.0   # not used during evaluation, kept for obs consistency
 
 algo:
   hidden_sizes: [256, 256]   # must match the network used during training
 
 eval:
-  checkpoint: "Results/mappo_b_ace_20260531_231156/final.pt"
+  checkpoint: "Results/mappo_b_ace_20260603_234207/checkpoint_20.pt"
   n_episodes: 10       # number of episodes to run
   deterministic: true  # true: mean action (no noise), false: sample stochastically

@@ -3,9 +3,9 @@
 
 env:
   env_path: "../../bin/B_ACE_v0.1_custom.exe"
-  renderize: 1          # 0: headless (training), 1: display (debug)
-  speed_up: 1
-  max_cycles: 36000
+  renderize: 0          # 0: headless (training), 1: display (debug)
+  speed_up: 100000
+  max_cycles: 1200
   seed: 1
   action_type: "Low_Level_Continuous"
 
@@ -49,9 +49,9 @@ agents:
     missile_spec:  "res://assets/specs/default_missile_spec.json"
 
 algo:
-  num_envs:        1
+  num_envs:        30
   num_steps:       1024        # number of steps until updating policy
-  total_timesteps: 50000000
+  total_timesteps: 100000000
   update_epochs:   4
   num_minibatches: 4
   gamma:           0.99
