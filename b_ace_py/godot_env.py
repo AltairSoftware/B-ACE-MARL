@@ -429,7 +429,10 @@ class GodotEnv:
         # Gets policy names defined in AIControllers in Godot. If an older version of the plugin is used and no policy
         # names are sent, "shared_policy" will be set for compatibility.
         self.agent_policy_names = json_dict.get("agent_policy_names", ["shared_policy"] * self.num_envs)
-        
+
+        # Number of blue (RL-trained) agents; red external agents make up the remainder.
+        self.n_blue_agents = json_dict.get("n_blue_agents", self.num_envs)
+
         return json_dict
 
     @staticmethod

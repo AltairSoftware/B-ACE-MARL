@@ -18,7 +18,8 @@ from torch.nn.utils import clip_grad_norm_
 from torch.utils.tensorboard import SummaryWriter
 
 from networks import MAPPOActor, MAPPOCritic
-from vec_env import PettingZooVecEnv, make_env as _make_single_env
+from vec_env import PettingZooVecEnv, RedTeamVecEnv, make_env as _make_single_env
+from b_ace_py.red_team_policy import RedTeamPolicy
 
 
 # ---------------------------------------------------------------------------
@@ -160,6 +161,7 @@ def train(
     b_ace_config: dict,
     reward_fn: Callable[[np.ndarray, float, bool], float] | None = None,
     restore_path: str | None = None,
+    red_team_policy: "RedTeamPolicy | None" = None,
 ) -> None:
     """
     Run MAPPO training.
@@ -189,7 +191,15 @@ def train(
     # ── Environment ───────────────────────────────────────────────────────
     combat_area = cfg.get("combat_area")
     env_fns = [lambda idx=i: _make_single_env(b_ace_config, idx) for i in range(n_envs)]
-    venv = PettingZooVecEnv(env_fns, combat_area=combat_area)
+
+    if red_team_policy is not None:
+        # RedTeamVecEnv starts the inner envs, reads n_blue from Godot env_info,
+        # and auto-injects obs_maps into the policy — no second process needed.
+        venv = RedTeamVecEnv(env_fns, red_team_policy, combat_area=combat_area)
+        print(f"  red_team_policy: chase+fire  n_blue={venv.n_agents}  n_red={venv._n_red}")
+    else:
+        venv = PettingZooVecEnv(env_fns, combat_area=combat_area)
+
     if combat_area:
         print(f"  combat_area: x=[{combat_area['x_min']}, {combat_area['x_max']}]"
               f"  z=[{combat_area['z_min']}, {combat_area['z_max']}]"

@@ -30,6 +30,7 @@ if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
 from ppo import train  # noqa: E402
+from b_ace_py.red_team_policy import RedTeamPolicy  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -92,6 +93,8 @@ def build_b_ace_config(cfg: dict) -> dict:
                 "mission":       a["red"]["mission"],
                 "init_position": a["red"]["init_position"],
                 "init_hdg":      a["red"]["init_hdg"],
+                "share_states":  a["red"].get("share_states", 1),
+                "share_tracks":  a["red"].get("share_tracks", 1),
                 "beh_config":    a["red"]["beh_config"],
                 "fighter_spec":  _resolve_spec_path(a["red"].get("fighter_spec", "res://assets/specs/default_fighter_spec.json")),
                 "missile_spec":  _resolve_spec_path(a["red"].get("missile_spec",  "res://assets/specs/default_missile_spec.json")),
@@ -160,9 +163,26 @@ if __name__ == "__main__":
 
     restore = cfg["logging"].get("restore")
 
+    # Build red team policy if red agents use external control.
+    # obs_maps are not yet available here (they come from Godot at env init),
+    # so we pass None and let train() handle injection via the env reference.
+    red_policy_cfg = cfg["agents"]["red"]
+    red_team_policy = None
+    if red_policy_cfg.get("base_behavior") == "external":
+        red_shot = red_policy_cfg.get("shot_threshold", 0.85)
+        red_var  = red_policy_cfg.get("shot_variation",  0.10)
+        # obs_maps are injected by RedTeamVecEnv after env init
+        red_team_policy = RedTeamPolicy(
+            obs_maps={},
+            shot_threshold=red_shot,
+            shot_variation=red_var,
+            combat_area=cfg.get("combat_area"),   # pass area boundaries for avoidance
+        )
+
     train(
         cfg,
         build_b_ace_config(cfg),
         reward_fn=make_reward_fn(cfg),
         restore_path=restore,
+        red_team_policy=red_team_policy,
     )

@@ -4,7 +4,7 @@
     "max_speed_kts":    650,
     "max_altitude_ft":  50000,
     "min_altitude_ft":  1000,
-    "max_g":            9.0,
+    "max_g":            24.6,
     "max_pitch_deg":    35.0,
     "min_pitch_deg":    -15.0,
 

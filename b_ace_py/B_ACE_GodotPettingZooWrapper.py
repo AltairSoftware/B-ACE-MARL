@@ -32,10 +32,10 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         self.parallel_envs  = int(self.env_config.get("parallel_envs", 1))          
         
         self.agents_config = config_kwargs.get("AgentsConfig", "")
-        self._num_agents = int(self.agents_config["blue_agents"].get("num_agents", 1))
+        self._num_blue_agents = int(self.agents_config["blue_agents"].get("num_agents", 1))
         
         self.share_states  = int(self.agents_config["blue_agents"].get("share_states", 1))
-        self.share_tracks =  int(self.agents_config["blue_agents"].get("share_tracks", 1))       
+        self.share_tracks  = int(self.agents_config["blue_agents"].get("share_tracks", 1))
         
         self.additional_config = self.env_config.get("additional_config", "") 
         
@@ -67,38 +67,51 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         env_info = self._get_env_info()          
                 
         self.observation_labels = env_info["observation_labels"]
-                
+
         self.tuple_action_spaces = [
             spaces.Tuple([v for _, v in action_space.items()]) for action_space in self.action_spaces
         ]
         # Single agent action space processor using the action space(s) of the first agent
         self.action_space_processor = ActionSpaceProcessor(self.tuple_action_spaces[0], convert_action_space)
-                
+
         # For multi-policy envs: The name of each agent's policy set in the env itself (any training_mode
         # AIController instance is treated as an agent)
         self.agent_policy_names
 
         atexit.register(self._close)
-                                
-        #Initialization for PettingZoo Paralell
-        self.agents = [f'agent_{i}' for i in range(self._num_agents)]  # Initialize agents
-        self.possible_agents = self.agents[:]
-        
-                        
-        self.obs_map= {agent : {label: index for index, label in enumerate(self.observation_labels[str(101 + i)])}  for i,agent in enumerate(self.possible_agents)}               
 
-        self.agent_idx = [ {agent : i} for i, agent in enumerate(self.possible_agents)]                 
-        
+        # Total agents = blue + red external (from Godot env_info)
+        self.n_blue = self.n_blue_agents          # set by godot_env._get_env_info()
+        n_total     = self.num_envs               # n_blue + n_red_external
+
+        #Initialization for PettingZoo Paralell
+        self.agents = [f'agent_{i}' for i in range(n_total)]
+        self.possible_agents = self.agents[:]
+
+        # obs_map: blue agents have Godot IDs 101+, red external agents have IDs 201+
+        obs_map = {}
+        for i in range(self.n_blue):
+            agent = f'agent_{i}'
+            obs_map[agent] = {label: idx for idx, label in
+                              enumerate(self.observation_labels[str(101 + i)])}
+        for i in range(n_total - self.n_blue):
+            agent = f'agent_{self.n_blue + i}'
+            obs_map[agent] = {label: idx for idx, label in
+                              enumerate(self.observation_labels[str(201 + i)])}
+        self.obs_map = obs_map
+
+        self.agent_idx = [{agent: i} for i, agent in enumerate(self.possible_agents)]
+
         self.observation_space = self.observation_spaces[0]["obs"]
         self.action_space = self.action_spaces[0]["input"]
-        
-        self._cumulative_rewards = {agent : 0  for agent in self.possible_agents}                
-        self.rewards =  {agent : 0  for agent in self.possible_agents}
-        self.terminations =  {agent : False  for agent in self.possible_agents}
-        self.truncations =  {agent : False  for agent in self.possible_agents} 
-        self.observations =  {agent : []  for agent in self.possible_agents}  
-        self.info =  {agent : []  for agent in self.possible_agents}  
-        self.infos =  {agent : []  for agent in self.possible_agents}  
+
+        self._cumulative_rewards = {agent: 0   for agent in self.possible_agents}
+        self.rewards      = {agent: 0   for agent in self.possible_agents}
+        self.terminations = {agent: False for agent in self.possible_agents}
+        self.truncations  = {agent: False for agent in self.possible_agents}
+        self.observations = {agent: []  for agent in self.possible_agents}
+        self.info         = {agent: []  for agent in self.possible_agents}
+        self.infos        = {agent: []  for agent in self.possible_agents}
                             
     def send_sim_config(self, _env_config, _agents_config):
         message = {"type": "config"}        
@@ -107,20 +120,20 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         self._send_as_json(message)
             
         
-    def reset(self, seed=0, options = None):
-        
-        result  = super().reset()
-    
-        self.observations = {}          
-        
-        for i, indiv_obs in enumerate(result[0]):
-                        
-            self.observations[self.possible_agents[i]] = {"obs": indiv_obs["obs"], "mask": [True for _ in range(4)]}
-            #self.observations[self.possible_agents[i]] =  indiv_obs["obs"] 
-            self.info[self.possible_agents[i]] = {self.possible_agents[i]}                  
-        # Assuming the reset method returns a dictionary of observations for each agent        
-                
-        return self.observations, self.info  
+    def reset(self, seed=0, options=None):
+        # result[0] is a dict {agent_name: {"obs": [...]}} sent from Godot
+        result = super().reset()
+        obs_dict = result[0]
+
+        self.observations = {}
+        for agent_name, indiv_obs in obs_dict.items():
+            self.observations[agent_name] = {
+                "obs":  indiv_obs["obs"],
+                "mask": [True for _ in range(4)],
+            }
+            self.info[agent_name] = {agent_name}
+
+        return self.observations, self.info
     
     
     def _observation_space(self, agent):        
@@ -155,11 +168,13 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         self.rewards = 0.0
         
         for i, agent in enumerate(self.possible_agents):
-            
+
             self.terminations = self.terminations or dones[agent]
-            self.truncations = self.truncations and truncs[agent]           
-                        
-            self.rewards += reward[agent]   
+            self.truncations  = self.truncations and truncs[agent]
+
+            # Only accumulate blue-agent rewards for RL training signal
+            if i < self.n_blue:
+                self.rewards += reward[agent]
             
         return self.observations, self.rewards, self.terminations, self.truncations, self.info 
     

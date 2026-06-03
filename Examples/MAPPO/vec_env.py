@@ -32,6 +32,7 @@ from typing import Callable
 import numpy as np
 
 from b_ace_py.B_ACE_GodotPettingZooWrapper import B_ACE_GodotPettingZooWrapper
+from b_ace_py.red_team_policy import RedTeamPolicy
 
 
 def make_env(b_ace_config: dict, env_idx: int) -> B_ACE_GodotPettingZooWrapper:
@@ -197,3 +198,105 @@ class PettingZooVecEnv:
         self._pool.shutdown(wait=False)
         for env in self.envs:
             env.close()
+
+
+class RedTeamVecEnv:
+    """
+    Wraps PettingZooVecEnv to handle a rule-based red team transparently.
+
+    From the PPO algorithm's perspective, only blue agents exist (n_agents = n_blue).
+    Red agents are controlled internally by RedTeamPolicy on every step.
+
+    Output shapes (n_envs=E, n_blue=A, obs_dim=O):
+        reset() -> obs:     (E, A, O)
+        step()  -> obs:     (E, A, O)
+                   rewards: (E,)
+                   dones:   (E,)
+                   infos:   list[dict]  length E
+    """
+
+    def __init__(
+        self,
+        env_fns: list[Callable[[], B_ACE_GodotPettingZooWrapper]],
+        red_team_policy: RedTeamPolicy,
+        combat_area: dict | None = None,
+    ):
+        self._inner = PettingZooVecEnv(env_fns, combat_area=combat_area)
+
+        # n_blue is reported by Godot's env_info; read from the first live env.
+        n_blue = self._inner.envs[0].n_blue
+        self._n_blue          = n_blue
+        self._n_red           = self._inner.n_agents - n_blue
+        self._red_agent_names = self._inner.agents[n_blue:]
+
+        # Inject obs_maps into the policy using the first inner env's map.
+        ref_env = self._inner.envs[0]
+        red_team_policy.obs_maps = {
+            name: ref_env.obs_map[name] for name in self._red_agent_names
+        }
+        self._red_policy = red_team_policy
+
+        # Last observed red-agent obs per environment, shape (n_envs, n_red, obs_dim)
+        self._last_red_obs: np.ndarray | None = None
+
+        # RL-visible dimensions (only blue agents exposed to the algorithm)
+        self.n_envs         = self._inner.n_envs
+        self.n_agents       = n_blue
+        self.action_dim     = self._inner.action_dim
+        self.obs_dim        = self._inner.obs_dim
+        self.global_obs_dim = self.obs_dim * n_blue
+        self.agents         = self._inner.agents[:n_blue]
+
+    # ------------------------------------------------------------------
+    # Public API (mirrors PettingZooVecEnv)
+    # ------------------------------------------------------------------
+
+    def reset(self) -> np.ndarray:
+        """Reset all envs, cache red obs, return only blue obs (E, A, O)."""
+        all_obs = self._inner.reset()                         # (E, n_all, O)
+        self._last_red_obs = all_obs[:, self._n_blue:, :]    # (E, n_red, O)
+        return all_obs[:, :self._n_blue, :]                  # (E, n_blue, O)
+
+    def step(
+        self, blue_actions: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list]:
+        """
+        Step all environments with combined blue + red actions.
+
+        blue_actions: (n_envs, n_blue, action_dim)  — from the RL algorithm.
+        Returns blue obs, rewards, dones, infos (red agents excluded from outputs).
+        """
+        # Compute red actions using last cached observations
+        red_actions = self._compute_red_actions()             # (n_envs, n_red, action_dim)
+        all_actions = np.concatenate([blue_actions, red_actions], axis=1)  # (n_envs, n_all, D)
+
+        all_obs, rewards, dones, infos = self._inner.step(all_actions)
+
+        self._last_red_obs = all_obs[:, self._n_blue:, :]    # cache for next step
+        blue_obs = all_obs[:, :self._n_blue, :]
+        return blue_obs, rewards, dones, infos
+
+    def get_global_obs(self, obs: np.ndarray) -> np.ndarray:
+        """obs (E, n_blue, O) -> global_obs (E, n_blue*O)."""
+        return obs.reshape(obs.shape[0], -1)
+
+    def close(self) -> None:
+        self._inner.close()
+
+    # ------------------------------------------------------------------
+    # Internal
+    # ------------------------------------------------------------------
+
+    def _compute_red_actions(self) -> np.ndarray:
+        """
+        Run RedTeamPolicy for every env and every red agent.
+
+        Returns shape (n_envs, n_red, action_dim).
+        """
+        n_envs, n_red, obs_dim = self._last_red_obs.shape
+        actions = np.zeros((n_envs, n_red, self.action_dim), dtype=np.float32)
+        for e in range(n_envs):
+            actions[e] = self._red_policy.act_batch(
+                self._red_agent_names, self._last_red_obs[e]
+            )
+        return actions

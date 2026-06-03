@@ -23,6 +23,7 @@ var simGroups
 
 var agents = []
 var enemies = []
+var red_external_agents = []
 var fighters = []
 var teams_agents =[[],[]]
 
@@ -289,6 +290,8 @@ func _set_agents(_tree):
 			var red_config = agentsConfig["red_agents"].duplicate(true)
 			newFigther.team_id = 1
 			enemies.append(newFigther)
+			if red_config["base_behavior"] == "external":
+				red_external_agents.append(newFigther)
 									
 			var num_group = _tree.get_nodes_in_group(simGroups.RED).size()
 			var offset_x = 0
@@ -317,6 +320,9 @@ func _set_agents(_tree):
 		fighter.update_scene(tree)
 	var i = 0
 	for agent in agents:
+		agent.agent_name = "agent_" + str(i)
+		i = i + 1
+	for agent in red_external_agents:
 		agent.agent_name = "agent_" + str(i)
 		i = i + 1
 		
@@ -388,24 +394,30 @@ func _reset_all_uavs():
 			uav.update_scene(tree) 
 	
 func _get_obs_from_agents():
-	
+
 	var obs = []
 	for agent in agents:
 		obs.append(agent.get_obs())
-				
+	for agent in red_external_agents:
+		obs.append(agent.get_obs())
 	return obs
-	
+
 func _get_reward_from_agents():
-	var rewards = [] 
+	var rewards = []
 	for agent in agents:
-		rewards.append(agent.get_reward())		
-		finalState[agent.team_id]["reward"] += rewards[-1]		
-	return rewards    
-	
+		rewards.append(agent.get_reward())
+		finalState[agent.team_id]["reward"] += rewards[-1]
+	for agent in red_external_agents:
+		rewards.append(agent.get_reward())
+		finalState[agent.team_id]["reward"] += rewards[-1]
+	return rewards
+
 func _get_done_from_agents():
 	var dones = []
 	for agent in agents:
-		dones.append(agent.get_done())		
+		dones.append(agent.get_done())
+	for agent in red_external_agents:
+		dones.append(agent.get_done())
 	return dones
 
 func _get_done_from_enemies():
@@ -427,10 +439,12 @@ func _check_all_done_enemies():
 	return true
 
 func _set_agent_actions(actions):
-	for i in range(len(actions)):
-		#env.debug_text.add_text("\nAction:" + str(actions[i])) 
-		#print(i, actions[i])
+	var n_blue = len(agents)
+	for i in range(n_blue):
 		agents[i].set_action(actions[i])
+	for i in range(len(red_external_agents)):
+		if n_blue + i < len(actions):
+			red_external_agents[i].set_action(actions[n_blue + i])
 	
 func _set_heuristic(heuristic):
 	for agent in agents:

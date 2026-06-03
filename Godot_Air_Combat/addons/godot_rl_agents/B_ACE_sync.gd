@@ -110,18 +110,23 @@ func _send_dict_as_json_message(dict):
 func _send_env_info():
 	var json_dict = _get_dict_json_message()
 	assert(json_dict["type"] == "env_info")
-		
+
+	var blue_agents = simulation_list[0].agents
+	var red_ext     = simulation_list[0].red_external_agents
+	var all_agents  = blue_agents + red_ext
+
 	var observation_labels = {}
-	for agent in simulation_list[0].agents:
+	for agent in all_agents:
 		observation_labels[agent.id] = agent.get_obs(true)["labels"]
-	
+
 	var message = {
-		"type" : "env_info",		
-		"observation_space" : simulation_list[0].agents[0].get_obs_space(),
+		"type"             : "env_info",
+		"observation_space": blue_agents[0].get_obs_space(),
 		"observation_labels": observation_labels,
-		"action_space": simulation_list[0].agents[0].get_action_space(),
-		"n_agents": len(simulation_list[0].agents)
-		}		
+		"action_space"     : blue_agents[0].get_action_space(),
+		"n_agents"         : len(all_agents),
+		"n_blue_agents"    : len(blue_agents)
+	}
 	_send_dict_as_json_message(message)
 
 func connect_to_server():
@@ -336,17 +341,18 @@ func _physics_process(delta):
 			if just_reset:		
 							
 				just_reset = false
-				var obs = _get_obs_from_simulations()				
-				
+				var obs = _get_obs_from_simulations()
+
+				var _all_agents_reset = simulation_list[0].agents + simulation_list[0].red_external_agents
 				var obs_dict = {}
 				var i = 0
-				for agent in simulation_list[0].agents:
+				for agent in _all_agents_reset:
 					obs_dict[agent.agent_name] = obs[i]
-					i = i + 1					
-			
+					i = i + 1
+
 				var reply = {
 					"type": "reset",
-					"obs": obs
+					"obs": obs_dict
 				}
 				_send_dict_as_json_message(reply)
 				# this should go straight to getting the action and setting it checked the agent, no need to perform one phyics tick
@@ -359,14 +365,15 @@ func _physics_process(delta):
 				var done = _get_dones_from_simulations_agents()				
 				var obs = _get_obs_from_simulations()
 				
-				var obs_dict  	= {}
-				var done_dict 	= {}
+				var obs_dict    = {}
+				var done_dict   = {}
 				var reward_dict = {}
-				
+
+				var _all_agents_step = simulation_list[0].agents + simulation_list[0].red_external_agents
 				var i = 0
-				for agent in simulation_list[0].agents:
-					obs_dict[agent.agent_name] = obs[i]
-					done_dict[agent.agent_name] = done[i]
+				for agent in _all_agents_step:
+					obs_dict[agent.agent_name]    = obs[i]
+					done_dict[agent.agent_name]   = done[i]
 					reward_dict[agent.agent_name] = reward[i]
 					i = i + 1
 

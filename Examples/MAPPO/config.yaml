@@ -33,15 +33,19 @@ agents:
     missile_spec:  "missile_spec.json"
   red:
     num_agents: 2
-    base_behavior: "baseline1"
+    base_behavior: "external"     # controlled by RedTeamPolicy (Python-side)
     mission: "striker"
     init_position: {x: 0.0, y: 25000.0, z: -0.8}
     init_hdg: 180.0
-    beh_config:
-      dShot:  [0.50, 0.99, 1.04]
-      lCrank: [0.98, 0.96, 1.14]
-      lBreak: [1.17, 0.51, 1.05]
-    fighter_spec: "res://assets/specs/default_fighter_spec.json"
+    share_states: 1
+    share_tracks: 1
+    shot_threshold: 0.85          # fire when offensive_factor exceeds this
+    shot_variation: 0.10          # ±uniform noise on shot_threshold
+    beh_config:                   # kept for Godot config compatibility
+      dShot:  [0.85]
+      lCrank: [0.60]
+      lBreak: [0.95]
+    fighter_spec: "fighter_spec.json"
     missile_spec:  "res://assets/specs/default_missile_spec.json"
 
 algo:

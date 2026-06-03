@@ -15,7 +15,9 @@
       "Bash(python Examples/MAPPO/networks.py)",
       "Bash(python -c ' *)",
       "Bash(python Examples/MAPPO/mappo_b_ace.py)",
-      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\yoshi\\\\Workspace\\\\B-ACE-MARL\" -Force)"
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\yoshi\\\\Workspace\\\\B-ACE-MARL\" -Force)",
+      "Bash(xargs grep -l \"red_agents\\\\|red_team\\\\|baseline\\\\|external\")",
+      "Bash(grep -E \"\\\\.\\(gd|json\\)$\")"
     ]
   }
 }
