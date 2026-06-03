@@ -12,13 +12,13 @@ env:
 rewards:
   mission_factor:              0.0001
   missile_fire_factor:        -0.1
-  missile_no_fire_factor:     -0.0
-  missile_miss_factor:        -0.5
-  detect_loss_factor:         -0.1
+  missile_no_fire_factor:     -0.0001
+  missile_miss_factor:        -0.2
+  detect_loss_factor:         -0.0001
   keep_track_factor:           0.0001
-  hit_enemy_factor:            3.0
-  hit_own_factor:             -5.0
-  mission_accomplished_factor: 10.0
+  hit_enemy_factor:            0.3
+  hit_own_factor:             -0.5
+  mission_accomplished_factor: 0.0
 
 agents:
   blue:
@@ -73,7 +73,7 @@ combat_area:
   x_max:  1   # lateral right boundary (NM)
   z_min: -1   # longitudinal near boundary (NM)
   z_max:  1   # longitudinal far boundary (NM)
-  out_penalty: -1.0   # reward penalty per step when any blue agent is outside
+  out_penalty: -0.0002   # reward penalty per step when any blue agent is outside
 
 logging:
   exp_name:            "mappo_b_ace"
